@@ -1,5 +1,8 @@
+## Nicholas Teresi (nt323), Pratik Mishra (pm711), Noble Ibe (ni106)
+
 import random
 import statistics
+from copy import copy, deepcopy
 
 p_flat = .1
 p_hilly = .3
@@ -33,7 +36,7 @@ def grid(dim):
     return env
 
 ## Each cell in the belief grid initially takes the form [type, probability], where type for all is unknown (0)
-## and the probability is 1/(# of cells)
+## and the probability is 1/(# of cells) or 0 depending on whether the target can move
 def blf_grid(dim, move):
     blf = []
     for i in range(dim):
@@ -48,11 +51,14 @@ def blf_grid(dim, move):
 ##        print(' '.join([str(elem) for elem in row]))
     return blf
 
+## This just calculates the Manhattan distance between (x, y) and (i, j)
 def Manhattan(x, y, i, j):
     if (abs(x-i)+abs(y-j)) == 0:
         return .99
     return abs(x-i)+abs(y-j)
 
+## update_blf will update the remaining cells in the belief grid after a search has failed, by scaling value which depends on
+## the new calculated probability for the cell that the search failed in
 def update_blf(blf, i, j, old_blf, dim):
     blf_value = blf[i][j][1]
     scale = 1
@@ -97,6 +103,8 @@ def next_cell(blf, x, y, dim, rule, action):
 ##    print("Next cell is (" + str(coord[1]) + ", " + str(coord[0]) + ")")
     return coord
 
+## This is the main algorithm for the stationary target search. It will keep searching until it has found the target, updating the belief grid
+## after each search and keeping track of a counter
 def search(env, blf, dim, rule, action):
     counter = 1
     i = 0
@@ -137,6 +145,8 @@ def search(env, blf, dim, rule, action):
         counter += 1
     return [counter, j, i]
 
+## This function will move a target to neighboring cell after a failed search, and report back with
+## the type of border crossing which occured. Only used in Moving Target Search.
 def move_target(env, dim):
 ##    print()
 ##    for row in env:
@@ -167,6 +177,8 @@ def move_target(env, dim):
 ##        print(' '.join([str(elem) for elem in row]))
     return env, borders
 
+## This function is the Moving Target Search's equivalent to the Stationary Search's update_blf() function. It updates belief probabilities
+## based off the type of borders each cell has and the border that was found by move_target().
 def update_blf_mv(blf, dim, border):
 ##    print("Border: " + str(border))
     directions = [[1, 0], [0, 1], [-1, 0], [0, -1]]
@@ -194,7 +206,7 @@ def update_blf_mv(blf, dim, border):
                 blf[i][j][1] /= total
     return blf
             
-
+## This is the main Moving Target Search algorithm. It's mostly the same as search except in the way it handles search failures.
 def moving_target_search(env, blf, dim, rule, action):
     counter = 1
     i = 0
@@ -239,7 +251,7 @@ def moving_target_search(env, blf, dim, rule, action):
         counter += 1
     return [counter, j, i]
         
-## With print statements
+## With print statements for debugging
 
 ##def search(env, blf, dim, rule, action):
 ##    counter = 1
@@ -293,12 +305,26 @@ def moving_target_search(env, blf, dim, rule, action):
 ##        print(' '.join([str(elem) for elem in row]))
 ##    return [counter, j, i]
 
+## Grid dimension
 dim = 50
-trials = 1
+
+## Number of trials
+trials = 100
+
+## 0:= Rule 1, 1:= Rule 2
 rule = 0
-action = 1
-moving = 1
+
+## 0:= No action cost, 1:= Action costs
+action = 0
+
+## 0:= Stationary Target, 1:= Moving Target
+moving = 0
+
 env = grid(dim)
+
+## Uncomment a section below to test for a specific problem
+
+################# Problem 3 Testing #################
 
 ##print()
 ##print("Rule 1 Trials:")
@@ -314,8 +340,6 @@ env = grid(dim)
 ##print()
 ##
 ##rule = 1
-##action = 1
-##moving = 1
 ##print()
 ##print("Rule 2 Trials:")
 ##rule_two = []
@@ -328,27 +352,63 @@ env = grid(dim)
 ##print()
 ##print("Average is " + str(statistics.mean(rule_two)))
 
-print()
-print("Moving Target, Rule 1")
-res = []
-for x in range(trials):
-    blf = blf_grid(dim, moving)
-    result = moving_target_search(env, blf, dim, rule, action)
-    res.append(result[0])
-    print()
-    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
-print()
-print("Average is " + str(statistics.mean(res)))
+################# Problem 4 Testing #################
 
-rule = 1
-print()
-print("Moving Target, Rule 2")
-res = []
-for x in range(trials):
-    blf = blf_grid(dim, moving)
-    result = moving_target_search(env, blf, dim, rule, action)
-    res.append(result[0])
-    print()
-    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
-print()
-print("Average is " + str(statistics.mean(res)))
+##while env[dim-1][dim-1][1] != 1:
+##    env = grid(dim)
+##print()
+##print("No Action Cost, Rule 2")
+##res = []
+##for x in range(trials):
+##    blf = blf_grid(dim, moving)
+##    result = search(env, blf, dim, rule, action)
+##    res.append(result[0])
+##    print()
+##    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
+##print()
+##print("Average is " + str(statistics.mean(res)))
+##
+##action = 1
+##print()
+##print("Action Cost, Rule 2")
+##res = []
+##for x in range(trials):
+##    blf = blf_grid(dim, moving)
+##    result = search(env, blf, dim, rule, action)
+##    res.append(result[0])
+##    print()
+##    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
+##print()
+##print("Average is " + str(statistics.mean(res)))
+
+################# Moving Target Testing #################
+
+##rule = 0
+##action = 1
+##moving = 1
+##print()
+##print("Moving Target, Rule 1")
+##res = []
+##for x in range(trials):
+##    blf = blf_grid(dim, moving)
+##    envc = deepcopy(env)
+##    result = moving_target_search(envc, blf, dim, rule, action)
+##    res.append(result[0])
+##    print()
+##    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
+##print()
+##print("Average is " + str(statistics.mean(res)))
+##
+##rule = 1
+##print()
+##print("Moving Target, Rule 2")
+##res = []
+##for x in range(trials):
+##    blf = blf_grid(dim, moving)
+##    envc = deepcopy(env)
+##    result = moving_target_search(envc, blf, dim, rule, action)
+##    res.append(result[0])
+##    print()
+##    print("Trial " + str(x+1) + ": It took " + str(result[0]) + " iteration(s) to find the target at (" + str(result[1]) + ", " + str(result[2]) + ")")
+##print()
+##print("Average is " + str(statistics.mean(res)))
